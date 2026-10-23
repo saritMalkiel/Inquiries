@@ -6,7 +6,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     services:
       sqlserver:
@@ -31,15 +31,15 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore backend/RequestHub.sln
+        run: dotnet restore requests-docker.sln
 
       - name: Build
-        run: dotnet build backend/RequestHub.sln -c Release --no-restore
+        run: dotnet build requests-docker.sln -c Release --no-restore
 
       - name: Backend tests
         env:
           ConnectionStrings__Db: 'Server=localhost,1433;Database=RequestsDb_Test;User Id=sa;Password=Your_strong_Pass123;TrustServerCertificate=True'
-        run: dotnet test backend/RequestHub.sln -c Release --no-build --logger "console;verbosity=normal"
+        run: dotnet test requests-docker.sln -c Release --no-build --logger "console;verbosity=normal"
 
       - uses: actions/setup-node@v4
         with:
@@ -55,7 +55,7 @@ jobs:
         working-directory: frontend
         env:
           CHROME_BIN: /usr/bin/google-chrome
-        run: npm test -- --watch=false --browsers=ChromeHeadlessNoSandbox
+        run: npm test -- --watch=false --browsers=ChromeHeadless
 
       - name: Frontend build
         working-directory: frontend
