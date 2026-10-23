@@ -4,25 +4,36 @@ namespace Requests;
 
 public class AppDb : DbContext
 {
-    public AppDb(DbContextOptions<AppDb> o) : base(o) { }
+    public AppDb(DbContextOptions<AppDb> options) : base(options) { }
 
-    public DbSet<Request> Requests => Set<Request>();
+    public DbSet<ServiceRequest> Requests => Set<ServiceRequest>();
     public DbSet<StatusChange> StatusChanges => Set<StatusChange>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
-        var r = b.Entity<Request>();
-        r.Property(x => x.Title).HasMaxLength(200);
-        r.Property(x => x.OrganizationName).HasMaxLength(200);
-        r.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
-        r.Property(x => x.Priority).HasConversion<string>().HasMaxLength(20);
-        r.Property(x => x.RowVersion).IsRowVersion();
-        r.HasIndex(x => new { x.Status, x.Priority, x.CreatedAt });
-        r.HasIndex(x => x.OrganizationName);
+        b.Entity<ServiceRequest>(e =>
+        {
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.OrganizationName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.AssignedTo).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(2000);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.Priority);
+            e.HasIndex(x => x.CreatedAt);
+        });
 
-        var h = b.Entity<StatusChange>();
-        h.Property(x => x.PreviousStatus).HasConversion<string>().HasMaxLength(20);
-        h.Property(x => x.NewStatus).HasConversion<string>().HasMaxLength(20);
-        h.HasIndex(x => x.RequestId);
+        b.Entity<StatusChange>(e =>
+        {
+            e.Property(x => x.PreviousStatus).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.NewStatus).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ChangedBy).HasMaxLength(100);
+            e.HasOne(x => x.Request)
+             .WithMany(r => r.StatusChanges)
+             .HasForeignKey(x => x.RequestId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.RequestId, x.ChangedAt });
+        });
     }
 }
