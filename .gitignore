@@ -5,3 +5,4 @@ dist/
 *.user
 .vs/
 .env
+/frontend/.angular/
