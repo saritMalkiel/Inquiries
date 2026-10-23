@@ -6,57 +6,25 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-24.04
-
-    services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          ACCEPT_EULA: 'Y'
-          MSSQL_SA_PASSWORD: 'Your_strong_Pass123'
-        ports:
-          - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Your_strong_Pass123 -C -Q 'SELECT 1'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 20
-          --health-start-period 30s
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore
-        run: dotnet restore requests-docker.sln
-
-      - name: Build
-        run: dotnet build requests-docker.sln -c Release --no-restore
-
-      - name: Backend tests
-        env:
-          ConnectionStrings__Db: 'Server=localhost,1433;Database=RequestsDb_Test;User Id=sa;Password=Your_strong_Pass123;TrustServerCertificate=True'
-        run: dotnet test requests-docker.sln -c Release --no-build --logger "console;verbosity=normal"
+      - name: Backend
+        run: dotnet test requests-docker.sln -c Release
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend deps
+      - name: Frontend
         working-directory: frontend
-        run: npm ci
-
-      - name: Frontend tests
-        working-directory: frontend
-        env:
-          CHROME_BIN: /usr/bin/google-chrome
-        run: npm test -- --watch=false --browsers=ChromeHeadless
-
-      - name: Frontend build
-        working-directory: frontend
-        run: npm run build
+        run: |
+          npm ci
+          npm test
+          npm run build
